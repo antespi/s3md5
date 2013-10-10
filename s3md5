@@ -18,8 +18,6 @@
 # along with Server-Backup.  If not, see <http://www.gnu.org/licenses/>.
 
 VERSION='0.1-beta'
-ROOT_PATH=`root_path`
-APP=`basename $0`
 DEBUG=0
 
 ##################################################################
@@ -84,6 +82,9 @@ cleanup() {
    $RM_BIN "$SUM_FILE"
    $RM_BIN "$BIN_FILE"
 }
+
+ROOT_PATH=`root_path`
+APP=`basename $0`
 
 ECHO_BIN='/bin/echo'
 RM_BIN'/bin/rm -rf'

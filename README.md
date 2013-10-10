@@ -48,7 +48,7 @@ See the GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License along
 with s3md5. For license details you can read
-[LICENSE.md](https://github.com/teachnova/s3md5/blob/master/LICENSE)
+[LICENSE](https://github.com/teachnova/s3md5/blob/master/LICENSE)
 file. Also you can read GPLv3 from [GNU Licenses](http://www.gnu.org/licenses/).
 
 
