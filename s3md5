@@ -87,7 +87,7 @@ ROOT_PATH=`root_path`
 APP=`basename $0`
 
 ECHO_BIN='/bin/echo'
-RM_BIN'/bin/rm -rf'
+RM_BIN='/bin/rm -rf'
 DD_BIN='/bin/dd'
 MD5_BIN='/usr/bin/md5sum'
 CUT_BIN='/usr/bin/cut'
