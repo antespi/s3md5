@@ -132,24 +132,23 @@ while true; do
       to=$((i+size))
       $ECHO_BIN -n "SUM for part $part ($i to $to MB) ... "
    fi
-
    sum=`$DD_BIN bs=1024k count=$SIZE skip=$i if="$FILE" 2> "$ERROR_FILE" | $MD5_BIN | $CUT_BIN -d' ' -f1`
 
    if $GREP_BIN -q "cannot skip" "$ERROR_FILE"; then
       # End of file, break this loop
       if [ $DEBUG -eq 1 ]; then
          $ECHO_BIN "END"
-        fi
+      fi
       break
    else
       # Chunk read
       if [ $DEBUG -eq 1 ]; then
          $ECHO_BIN "OK - $sum"
       fi
-      i=$((i+size))
+      i=$((i+SIZE))
       n=$((n+1))
       # Add its md5 sum to sum list file
-      $ECHO_BIN "$sum" >> "$sumfile"
+      $ECHO_BIN "$sum" >> "$SUM_FILE"
    fi
 done
 
@@ -158,13 +157,13 @@ if [ $DEBUG -eq 1 ]; then
 fi
 
 # Convert all md5 sums (in hex text notation) to bin and concatenate them into a file
-$CAT_BIN "$sumfile" | $AWK_BIN '{print $1}' | while read MD5; do echo $MD5 | XXD_BIN -r -p >> "$BIN_FILE"; done
+$CAT_BIN "$SUM_FILE" | $AWK_BIN '{print $1}' | while read MD5; do echo $MD5 | $XXD_BIN -r -p >> "$BIN_FILE"; done
 
 # Calculate MD5 sum of this binary file
-s3sum=`MD5_BIN "$BIN_FILE" | $CUT_BIN -d' ' -f1`
+s3sum=`$MD5_BIN "$BIN_FILE" | $CUT_BIN -d' ' -f1`
 if [ $DEBUG -eq 1 ]; then
    $ECHO_BIN -n "Etag/S3 MD5 Sum : "
 fi
 
 # Return Etag/S3 MD5 Sum
-$ECHO_BIN $s3sum-$n"
+$ECHO_BIN "$s3sum-$n"
