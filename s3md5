@@ -49,6 +49,7 @@ is_integer() {
 
    return 0
 }
+
 license_show() {
    cat << LICENSE
 s3md5 v$VERSION
@@ -108,7 +109,7 @@ if [ ! -f "$FILE" ]; then
    exit 2
 fi
 
-if ! is_integer "$2"; then
+if ! is_integer "$SIZE"; then
    $ECHO_BIN "ERROR : Chunk size is not an integer number"
    exit 2
 fi
