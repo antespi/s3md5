@@ -16,12 +16,12 @@ comparing S3 Etag with the value returns by 's3md5 file'
 
 Usage
 =====
-
+```
 Usage : $APP <size> <file>
 
 - size : Multipart chunk size in MB
 - file : Calculate Etag of this file
-
+```
 
 
 Example
