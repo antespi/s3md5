@@ -59,23 +59,66 @@ This program comes with ABSOLUTELY NO WARRANTY. This is free software, and you a
 LICENSE
 }
 
-help_show() {
+short_help() {
+   option=$1
+   if [[ -n "$option" ]]; then
+      cat <<EOL
+ERROR : Invalid argument: '$option'
+
+EOL
+   fi
+   cat << HELP
+Usage :
+  # Get the S3 etag of a file
+  $APP <Multipart chunk size in MB> <file>
+
+  # Verify the S3 etag of a file
+  $APP -e|--etag <etag> <file>
+
+  # Short help
+  $APP -h
+
+  # Extended help
+  $APP --help
+
+Example :
+  # Use 15 MB chunk size (as default in s3cmd .s3cfg config file)
+  # and get the etag of "myFile"
+  $APP 15 myFile
+
+  # Given the S3 etag, verify if it matches "myFile"
+  $APP --etag e3ad981c2963eb533e3e58175cf1c966-8 myFile
+
+HELP
+}
+
+extended_help() {
    license_show
    cat << HELP
 Calculates the Etag/S3 MD5 Sum of a file, using the same algorithm that S3 uses on multipart uploaded files.
-Specially usefull on files bigger than 5GB uploaded using multipart S3 API. You can check file integrity
-comparing S3 Etag with the value returns by 's3md5 15 file'
-
-Usage : $APP <size> <file>
-
-- size : Multipart chunk size in MB
-- file : Calculate Etag of this file
-
-Example : Use 15 MB chunk size (as default in s3cmd .s3cfg config file)
-   ~> s3md5 15 myfile.dat
+Specially usefull on files bigger than 5GB uploaded using multipart S3 API.
 
 HELP
-   exit 1
+  short_help
+}
+
+options() {
+  while test $# -gt 0 ; do
+    case "$1" in
+      -h)
+        short_help
+        exit 1
+      ;;
+      --help)
+        extended_help
+        exit 1
+      ;;
+      -*)
+        short_help $1
+        exit 1
+      ;;
+    esac
+  done
 }
 
 cleanup() {
@@ -97,9 +140,10 @@ CAT_BIN='/bin/cat'
 AWK_BIN='/usr/bin/awk'
 XXD_BIN='/usr/bin/xxd'
 
+options "$@"
+
 # Check parameters
-if [ $# -ne 2 ]; then help_show; fi
-if [ "$1" == "-h" -o "$1" == "--help" ]; then help_show; fi
+if [ $# -lt 1 ]; then short_help; exit 1; fi
 
 SIZE="$1"
 FILE="$2"
