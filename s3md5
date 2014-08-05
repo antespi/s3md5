@@ -173,7 +173,7 @@ i=0
 while true; do
    if [ $DEBUG -eq 1 ]; then
       part=$((n+1))
-      to=$((i+size))
+      to=$((i+SIZE))
       $ECHO_BIN -n "SUM for part $part ($i to $to MB) ... "
    fi
    sum=`$DD_BIN bs=1024k count=$SIZE skip=$i if="$FILE" 2> "$ERROR_FILE" | $MD5_BIN | $CUT_BIN -d' ' -f1`
