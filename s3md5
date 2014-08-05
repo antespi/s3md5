@@ -160,17 +160,17 @@ AWK_BIN='/usr/bin/awk'
 XXD_BIN='/usr/bin/xxd'
 
 get_chunks_from_etag() {
-  echo $1 | cut -d'-' -f 2
+  $ECHO_BIN $1 | cut -d'-' -f 2
 }
 get_filesize_in_bytes() {
-  du -b $1 | cut -f 1
+  du -m $1 | cut -f 1
 }
 get_chunk_size() {
   local filesize=$1
   local chunks=$2
-  local min_chunk_size=`echo "( $filesize / (1024 * 1024) ) / ( $chunks )" | bc`
-  local max_chunk_size=`echo "( $filesize / (1024 * 1024) ) / ( $chunks - 1 )" | bc`
-  echo "Possible chunk sizes between $min_chunk_size and $max_chunk_size"
+  local min_chunk_size=`$ECHO_BIN "$filesize / $chunks" | bc`
+  local max_chunk_size=`$ECHO_BIN "$filesize / ( $chunks - 1 )" | bc`
+  $ECHO_BIN "With $chunks chunks, the possible chunk sizes are between $min_chunk_size MB and $max_chunk_size MB"
 }
 
 function run() {
@@ -179,11 +179,14 @@ function run() {
 
   SIZE="$1"
   FILE="$2"
+  local FILESIZE=`get_filesize_in_bytes $FILE`
+  if [ $DEBUG -eq 1 ]; then
+    $ECHO_BIN "File size: $FILESIZE MB"
+  fi
 
   if [ -n "$ETAG" ]; then
     if [ $DEBUG -eq 1 ]; then
       local CHUNKS=`get_chunks_from_etag $ETAG`
-      local FILESIZE=`get_filesize_in_bytes $FILE`
       get_chunk_size $FILESIZE $CHUNKS
     fi
   fi
@@ -214,11 +217,6 @@ n=0
 i=0
 
 while true; do
-   if [ $DEBUG -eq 1 ]; then
-      part=$((n+1))
-      to=$((i+SIZE))
-      $ECHO_BIN -n "SUM for part $part ($i to $to MB) ... "
-   fi
    sum=`$DD_BIN bs=1024k count=$SIZE skip=$i if="$FILE" 2> "$ERROR_FILE" | $MD5_BIN | $CUT_BIN -d' ' -f1`
 
    if $GREP_BIN -q "cannot skip" "$ERROR_FILE"; then
@@ -228,6 +226,11 @@ while true; do
       fi
       break
    else
+      if [ $DEBUG -eq 1 ]; then
+        part=$((n+1))
+        to=$((i+SIZE))
+        $ECHO_BIN -n "SUM for part $part ($i to $to MB) ... "
+      fi
       # Chunk read
       if [ $DEBUG -eq 1 ]; then
          $ECHO_BIN "OK - $sum"
@@ -244,7 +247,7 @@ if [ $DEBUG -eq 1 ]; then
 fi
 
 # Convert all md5 sums (in hex text notation) to bin and concatenate them into a file
-$CAT_BIN "$SUM_FILE" | $AWK_BIN '{print $1}' | while read MD5; do echo $MD5 | $XXD_BIN -r -p >> "$BIN_FILE"; done
+$CAT_BIN "$SUM_FILE" | $AWK_BIN '{print $1}' | while read MD5; do $ECHO_BIN $MD5 | $XXD_BIN -r -p >> "$BIN_FILE"; done
 
 # Calculate MD5 sum of this binary file
 s3sum=`$MD5_BIN "$BIN_FILE" | $CUT_BIN -d' ' -f1`
