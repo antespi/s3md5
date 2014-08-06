@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with s3md5.  If not, see <http://www.gnu.org/licenses/>.
 
-VERSION='1.0'
+VERSION='1.1'
 DEBUG=0
 
 ##################################################################
@@ -59,23 +59,85 @@ This program comes with ABSOLUTELY NO WARRANTY. This is free software, and you a
 LICENSE
 }
 
-help_show() {
+short_help() {
+   option=$1
+   if [[ -n "$option" ]]; then
+      cat <<EOL
+ERROR : Invalid argument: '$option'
+
+EOL
+   fi
+   cat << HELP
+Usage :
+  # Get the S3 etag of a file
+  $APP <chunk size in MB> <file> [-v|--verbose]
+
+  # Verify the S3 etag of a file
+  $APP -e|--etag <etag> <chunk size in MB> <file> [-v|--verbose]
+
+  # Short help
+  $APP -h
+
+  # Extended help
+  $APP --help
+
+Example :
+  # Use 15 MB chunk size (as default in s3cmd .s3cfg config file)
+  # and get the etag of "myFile"
+  $APP 15 myFile
+
+  # Given the S3 etag, verify if it matches "myFile"
+  $APP --etag e3ad981c2963eb533e3e58175cf1c966-8 64 myFile
+
+HELP
+}
+
+extended_help() {
    license_show
    cat << HELP
 Calculates the Etag/S3 MD5 Sum of a file, using the same algorithm that S3 uses on multipart uploaded files.
-Specially usefull on files bigger than 5GB uploaded using multipart S3 API. You can check file integrity
-comparing S3 Etag with the value returns by 's3md5 15 file'
-
-Usage : $APP <size> <file>
-
-- size : Multipart chunk size in MB
-- file : Calculate Etag of this file
-
-Example : Use 15 MB chunk size (as default in s3cmd .s3cfg config file)
-   ~> s3md5 15 myfile.dat
+Specially usefull on files bigger than 5GB uploaded using multipart S3 API.
 
 HELP
-   exit 1
+  short_help
+}
+
+ARGS=()
+function main() {
+  if [ $# -gt 0 ]; then
+    case "$1" in
+      -h)
+        short_help
+        exit 1
+      ;;
+      --help)
+        extended_help
+        exit 1
+      ;;
+      -e|--etag)
+        shift
+        ETAG=$1
+        shift
+        main "$@"
+      ;;
+      -v|--verbose)
+        shift
+        DEBUG=1
+        main "$@"
+      ;;
+      -*)
+        short_help $1
+        exit 1
+      ;;
+      *)
+        ARGS+=("$1")
+        shift
+        main "$@"
+      ;;
+    esac
+  else
+    run "${ARGS[@]}"
+  fi
 }
 
 cleanup() {
@@ -97,12 +159,40 @@ CAT_BIN='/bin/cat'
 AWK_BIN='/usr/bin/awk'
 XXD_BIN='/usr/bin/xxd'
 
-# Check parameters
-if [ $# -ne 2 ]; then help_show; fi
-if [ "$1" == "-h" -o "$1" == "--help" ]; then help_show; fi
+get_chunks_from_etag() {
+  $ECHO_BIN $1 | cut -d'-' -f 2
+}
+get_filesize_in_bytes() {
+  du -m $1 | cut -f 1
+}
+get_chunk_size() {
+  local filesize=$1
+  local chunks=$2
+  local min_chunk_size=`$ECHO_BIN "$filesize / $chunks" | bc`
+  local max_chunk_size=`$ECHO_BIN "$filesize / ( $chunks - 1 )" | bc`
+  $ECHO_BIN "With $chunks chunks, the possible chunk sizes are between $min_chunk_size MB and $max_chunk_size MB"
+}
 
-SIZE="$1"
-FILE="$2"
+function run() {
+  # Check parameters
+  if [ $# -lt 2 ]; then short_help; exit 1; fi
+
+  SIZE="$1"
+  FILE="$2"
+  local FILESIZE=`get_filesize_in_bytes $FILE`
+  if [ $DEBUG -eq 1 ]; then
+    $ECHO_BIN "File size: $FILESIZE MB"
+  fi
+
+  if [ -n "$ETAG" ]; then
+    if [ $DEBUG -eq 1 ]; then
+      local CHUNKS=`get_chunks_from_etag $ETAG`
+      get_chunk_size $FILESIZE $CHUNKS
+    fi
+  fi
+}
+
+main "$@"
 
 if [ ! -f "$FILE" ]; then
    $ECHO_BIN "ERROR : File '$FILE' not found"
@@ -127,11 +217,6 @@ n=0
 i=0
 
 while true; do
-   if [ $DEBUG -eq 1 ]; then
-      part=$((n+1))
-      to=$((i+size))
-      $ECHO_BIN -n "SUM for part $part ($i to $to MB) ... "
-   fi
    sum=`$DD_BIN bs=1024k count=$SIZE skip=$i if="$FILE" 2> "$ERROR_FILE" | $MD5_BIN | $CUT_BIN -d' ' -f1`
 
    if $GREP_BIN -q "cannot skip" "$ERROR_FILE"; then
@@ -141,6 +226,11 @@ while true; do
       fi
       break
    else
+      if [ $DEBUG -eq 1 ]; then
+        part=$((n+1))
+        to=$((i+SIZE))
+        $ECHO_BIN -n "SUM for part $part ($i to $to MB) ... "
+      fi
       # Chunk read
       if [ $DEBUG -eq 1 ]; then
          $ECHO_BIN "OK - $sum"
@@ -157,7 +247,7 @@ if [ $DEBUG -eq 1 ]; then
 fi
 
 # Convert all md5 sums (in hex text notation) to bin and concatenate them into a file
-$CAT_BIN "$SUM_FILE" | $AWK_BIN '{print $1}' | while read MD5; do echo $MD5 | $XXD_BIN -r -p >> "$BIN_FILE"; done
+$CAT_BIN "$SUM_FILE" | $AWK_BIN '{print $1}' | while read MD5; do $ECHO_BIN $MD5 | $XXD_BIN -r -p >> "$BIN_FILE"; done
 
 # Calculate MD5 sum of this binary file
 s3sum=`$MD5_BIN "$BIN_FILE" | $CUT_BIN -d' ' -f1`
@@ -165,5 +255,19 @@ if [ $DEBUG -eq 1 ]; then
    $ECHO_BIN -n "Etag/S3 MD5 Sum : "
 fi
 
-# Return Etag/S3 MD5 Sum
-$ECHO_BIN "$s3sum-$n"
+if [ -n "$ETAG" ]; then
+  if [ $DEBUG -eq 1 ]; then
+    # Return Etag/S3 MD5 Sum
+    $ECHO_BIN "$s3sum-$n"
+  fi
+  if [ "$s3sum-$n" == "$ETAG" ]; then
+    $ECHO_BIN "TRUE"
+    exit 0
+  else
+    $ECHO_BIN "FALSE"
+    exit 1
+  fi
+else
+  # Return Etag/S3 MD5 Sum
+  $ECHO_BIN "$s3sum-$n"
+fi
