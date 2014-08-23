@@ -160,10 +160,10 @@ AWK_BIN='/usr/bin/awk'
 XXD_BIN='/usr/bin/xxd'
 
 get_chunks_from_etag() {
-  $ECHO_BIN $1 | cut -d'-' -f 2
+  $ECHO_BIN "$1" | cut -d'-' -f 2
 }
 get_filesize_in_bytes() {
-  du -m $1 | cut -f 1
+  du -m "$1" | cut -f 1
 }
 get_chunk_size() {
   local filesize=$1
@@ -179,7 +179,7 @@ function run() {
 
   SIZE="$1"
   FILE="$2"
-  local FILESIZE=`get_filesize_in_bytes $FILE`
+  local FILESIZE=`get_filesize_in_bytes "$FILE"`
   if [ $DEBUG -eq 1 ]; then
     $ECHO_BIN "File size: $FILESIZE MB"
   fi
