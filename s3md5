@@ -219,6 +219,13 @@ i=0
 while true; do
    sum=`$DD_BIN bs=1024k count=$SIZE skip=$i if="$FILE" 2> "$ERROR_FILE" | $MD5_BIN | $CUT_BIN -d' ' -f1`
 
+   if $GREP_BIN -q "0 bytes (0 B) copied" "$ERROR_FILE"; then
+      # break this loop if 0 bytes read
+      if [ $DEBUG -eq 1 ]; then
+         $ECHO_BIN "END"
+      fi
+      break
+   fi
    if $GREP_BIN -q "cannot skip" "$ERROR_FILE"; then
       # End of file, break this loop
       if [ $DEBUG -eq 1 ]; then
