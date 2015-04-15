@@ -204,9 +204,9 @@ if ! is_integer "$SIZE"; then
    exit 2
 fi
 
-ERROR_FILE='/tmp/s3md5-error-$$.out'
-SUM_FILE='/tmp/s3md5-md5sumlist-$$.out'
-BIN_FILE='/tmp/s3md5-md5bin-$$.out'
+ERROR_FILE="/tmp/s3md5-error-$$.out"
+SUM_FILE="/tmp/s3md5-md5sumlist-$$.out"
+BIN_FILE="/tmp/s3md5-md5bin-$$.out"
 
 trap "{ cleanup; }" EXIT
 
