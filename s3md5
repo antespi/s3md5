@@ -120,6 +120,11 @@ function main() {
         shift
         main "$@"
       ;;
+      -H|--show-filename)
+        shift
+        SHOW_FILENAME=1
+        main "$@"
+      ;;
       -v|--verbose)
         shift
         DEBUG=1
@@ -262,12 +267,15 @@ if [ $DEBUG -eq 1 ]; then
    $ECHO_BIN -n "Etag/S3 MD5 Sum : "
 fi
 
+filename_in_output=""
+[[ -n ${SHOW_FILENAME} ]] && filename_in_output="  ${FILE}"
+
 if [ -n "$ETAG" ]; then
   if [ $DEBUG -eq 1 ]; then
     # Return Etag/S3 MD5 Sum
-    $ECHO_BIN "$s3sum-$n"
+    $ECHO_BIN "${s3sum}-${n}${filename_in_output}"
   fi
-  if [ "$s3sum-$n" == "$ETAG" ]; then
+  if [ "${s3sum}-${n}" == "$ETAG" ]; then
     $ECHO_BIN "TRUE"
     exit 0
   else
@@ -276,5 +284,5 @@ if [ -n "$ETAG" ]; then
   fi
 else
   # Return Etag/S3 MD5 Sum
-  $ECHO_BIN "$s3sum-$n"
+  $ECHO_BIN "${s3sum}-${n}${filename_in_output}"
 fi
