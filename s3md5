@@ -154,15 +154,15 @@ cleanup() {
 ROOT_PATH=`root_path`
 APP=`basename $0`
 
-ECHO_BIN='/bin/echo'
-RM_BIN='/bin/rm -rf'
-DD_BIN='/bin/dd'
-MD5_BIN='/usr/bin/md5sum'
-CUT_BIN='/usr/bin/cut'
-GREP_BIN='/bin/grep'
-CAT_BIN='/bin/cat'
-AWK_BIN='/usr/bin/awk'
-XXD_BIN='/usr/bin/xxd'
+ECHO_BIN=$(which echo)
+RM_BIN="$(which rm) -rf"
+DD_BIN=$(which dd)
+MD5_BIN=$(which md5sum)
+CUT_BIN=$(which cut)
+GREP_BIN=$(which grep)
+CAT_BIN=$(which cat)
+AWK_BIN=$(which awk)
+XXD_BIN=$(which xxd)
 
 get_chunks_from_etag() {
   $ECHO_BIN "$1" | cut -d'-' -f 2
