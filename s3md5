@@ -161,7 +161,7 @@ ROOT_PATH=`root_path`
 APP=`basename $0`
 
 ECHO_BIN=$(which echo)
-RM_BIN="$(which rm) -rf"
+RM_BIN="$(which rm) -f"
 DD_BIN=$(which dd)
 if [ "$IS_OSX" -eq 0 ]; then
 	MD5_BIN=$(which md5sum)
