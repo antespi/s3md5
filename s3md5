@@ -151,13 +151,23 @@ cleanup() {
    $RM_BIN "$BIN_FILE"
 }
 
+if [ "$(uname)" == "Darwin" ]; then
+	IS_OSX=1
+else
+	IS_OSX=0
+fi
+
 ROOT_PATH=`root_path`
 APP=`basename $0`
 
 ECHO_BIN=$(which echo)
 RM_BIN="$(which rm) -rf"
 DD_BIN=$(which dd)
-MD5_BIN=$(which md5sum)
+if [ "$IS_OSX" -eq 0 ]; then
+	MD5_BIN=$(which md5sum)
+else
+	MD5_BIN=$(which md5)
+fi
 CUT_BIN=$(which cut)
 GREP_BIN=$(which grep)
 CAT_BIN=$(which cat)
@@ -224,7 +234,7 @@ i=0
 while true; do
    sum=`$DD_BIN bs=1024k count=$SIZE skip=$i if="$FILE" 2> "$ERROR_FILE" | $MD5_BIN | $CUT_BIN -d' ' -f1`
 
-   if $GREP_BIN -q "0 bytes (0 B) copied" "$ERROR_FILE"; then
+   if $GREP_BIN -q "^0 bytes " "$ERROR_FILE"; then
       # break this loop if 0 bytes read
       if [ $DEBUG -eq 1 ]; then
          $ECHO_BIN "END"
@@ -262,7 +272,12 @@ fi
 $CAT_BIN "$SUM_FILE" | $AWK_BIN '{print $1}' | while read MD5; do $ECHO_BIN $MD5 | $XXD_BIN -r -p >> "$BIN_FILE"; done
 
 # Calculate MD5 sum of this binary file
-s3sum=`$MD5_BIN "$BIN_FILE" | $CUT_BIN -d' ' -f1`
+if [ "$IS_OSX" -eq 0 ]; then
+	s3sum=`$MD5_BIN "$BIN_FILE" | $CUT_BIN -d' ' -f1`
+else
+	s3sum=`$MD5_BIN "$BIN_FILE" | $CUT_BIN -d' ' -f4`
+fi
+
 if [ $DEBUG -eq 1 ]; then
    $ECHO_BIN -n "Etag/S3 MD5 Sum : "
 fi
