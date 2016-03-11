@@ -152,9 +152,9 @@ cleanup() {
 }
 
 if [ "$(uname)" == "Darwin" ]; then
-	IS_OSX=1
+  IS_OSX=1
 else
-	IS_OSX=0
+  IS_OSX=0
 fi
 
 ROOT_PATH=`root_path`
@@ -164,9 +164,9 @@ ECHO_BIN=$(which echo)
 RM_BIN="$(which rm) -f"
 DD_BIN=$(which dd)
 if [ "$IS_OSX" -eq 0 ]; then
-	MD5_BIN=$(which md5sum)
+  MD5_BIN=$(which md5sum)
 else
-	MD5_BIN=$(which md5)
+  MD5_BIN=$(which md5)
 fi
 CUT_BIN=$(which cut)
 GREP_BIN=$(which grep)
@@ -273,9 +273,9 @@ $CAT_BIN "$SUM_FILE" | $AWK_BIN '{print $1}' | while read MD5; do $ECHO_BIN $MD5
 
 # Calculate MD5 sum of this binary file
 if [ "$IS_OSX" -eq 0 ]; then
-	s3sum=`$MD5_BIN "$BIN_FILE" | $CUT_BIN -d' ' -f1`
+  s3sum=`$MD5_BIN "$BIN_FILE" | $CUT_BIN -d' ' -f1`
 else
-	s3sum=`$MD5_BIN "$BIN_FILE" | $CUT_BIN -d' ' -f4`
+  s3sum=`$MD5_BIN "$BIN_FILE" | $CUT_BIN -d' ' -f4`
 fi
 
 if [ $DEBUG -eq 1 ]; then
