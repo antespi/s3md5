@@ -108,11 +108,11 @@ function main() {
     case "$1" in
       -h)
         short_help
-        exit 1
+        exit 2
       ;;
       --help)
         extended_help
-        exit 1
+        exit 2
       ;;
       -e|--etag)
         shift
@@ -132,7 +132,7 @@ function main() {
       ;;
       -*)
         short_help $1
-        exit 1
+        exit 2
       ;;
       *)
         ARGS+=("$1")
@@ -178,31 +178,35 @@ get_chunks_from_etag() {
   $ECHO_BIN "$1" | cut -d'-' -f 2
 }
 get_filesize_in_bytes() {
-  du -m "$1" | cut -f 1
+  du -b "$1" | cut -f 1
 }
 get_chunk_size() {
   local filesize=$1
   local chunks=$2
-  local min_chunk_size=`$ECHO_BIN "$filesize / $chunks" | bc`
-  local max_chunk_size=`$ECHO_BIN "$filesize / ( $chunks - 1 )" | bc`
-  $ECHO_BIN "With $chunks chunks, the possible chunk sizes are between $min_chunk_size MB and $max_chunk_size MB"
+  $ECHO_BIN "$filesize / $chunks / 1000 / 1000" | bc
 }
 
 function run() {
   # Check parameters
-  if [ $# -lt 2 ]; then short_help; exit 1; fi
+  SIZE=""
+  if [ -n "$ETAG" ]; then
+    if [ $# -lt 1 ]; then short_help; exit 2; fi
+    FILE="$1"
+  else
+    if [ $# -lt 2 ]; then short_help; exit 2; fi
+    SIZE="$1"
+    FILE="$2"
+  fi
 
-  SIZE="$1"
-  FILE="$2"
   local FILESIZE=`get_filesize_in_bytes "$FILE"`
   if [ $DEBUG -eq 1 ]; then
     $ECHO_BIN "File size: $FILESIZE MB"
   fi
 
   if [ -n "$ETAG" ]; then
-    if [ $DEBUG -eq 1 ]; then
-      local CHUNKS=`get_chunks_from_etag $ETAG`
-      get_chunk_size $FILESIZE $CHUNKS
+    local CHUNKS=`get_chunks_from_etag $ETAG`
+    if [ "$SIZE" == "" ]; then
+      SIZE=`get_chunk_size $FILESIZE $CHUNKS`
     fi
   fi
 }
