@@ -184,7 +184,7 @@ get_chunk_size() {
   local filesize=$1
   local chunks=$2
   if is_integer "$chunks"; then
-    $ECHO_BIN "$filesize / $chunks / 1000 / 1000" | bc
+    $ECHO_BIN "$filesize / $chunks / 1024 / 1024" | bc
   else
     $ECHO_BIN 1
   fi
