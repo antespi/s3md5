@@ -183,7 +183,11 @@ get_filesize_in_bytes() {
 get_chunk_size() {
   local filesize=$1
   local chunks=$2
-  $ECHO_BIN "$filesize / $chunks / 1000 / 1000" | bc
+  if is_integer "$chunks"; then
+    $ECHO_BIN "$filesize / $chunks / 1000 / 1000" | bc
+  else
+    $ECHO_BIN 1
+  fi
 }
 
 function run() {
@@ -268,18 +272,30 @@ while true; do
    fi
 done
 
+
 if [ $DEBUG -eq 1 ]; then
    $ECHO_BIN "Converting all md5sums to binary"
 fi
 
-# Convert all md5 sums (in hex text notation) to bin and concatenate them into a file
-$CAT_BIN "$SUM_FILE" | $AWK_BIN '{print $1}' | while read MD5; do $ECHO_BIN $MD5 | $XXD_BIN -r -p >> "$BIN_FILE"; done
+if [ $n -gt 1 ];then
+	# Convert all md5 sums (in hex text notation) to bin and concatenate them into a file
+	$CAT_BIN "$SUM_FILE" | $AWK_BIN '{print $1}' | while read MD5; do $ECHO_BIN $MD5 | $XXD_BIN -r -p >> "$BIN_FILE"; done
 
-# Calculate MD5 sum of this binary file
-if [ "$IS_OSX" -eq 0 ]; then
-  s3sum=`$MD5_BIN "$BIN_FILE" | $CUT_BIN -d' ' -f1`
+	# Calculate MD5 sum of this binary file
+	if [ "$IS_OSX" -eq 0 ]; then
+	  s3sum=`$MD5_BIN "$BIN_FILE" | $CUT_BIN -d' ' -f1`
+	else
+	  s3sum=`$MD5_BIN "$BIN_FILE" | $CUT_BIN -d' ' -f4`
+	fi
+	n="-$n"
 else
-  s3sum=`$MD5_BIN "$BIN_FILE" | $CUT_BIN -d' ' -f4`
+	# Calculate MD5 sum of this binary file
+	if [ "$IS_OSX" -eq 0 ]; then
+	  s3sum=`$MD5_BIN "$FILE" | $CUT_BIN -d' ' -f1`
+	else
+	  s3sum=`$MD5_BIN "$FILE" | $CUT_BIN -d' ' -f4`
+	fi
+	n=""
 fi
 
 if [ $DEBUG -eq 1 ]; then
@@ -292,9 +308,9 @@ filename_in_output=""
 if [ -n "$ETAG" ]; then
   if [ $DEBUG -eq 1 ]; then
     # Return Etag/S3 MD5 Sum
-    $ECHO_BIN "${s3sum}-${n}${filename_in_output}"
+    $ECHO_BIN "${s3sum}${n}${filename_in_output}"
   fi
-  if [ "${s3sum}-${n}" == "$ETAG" ]; then
+  if [ "${s3sum}${n}" == "$ETAG" ]; then
     $ECHO_BIN "TRUE"
     exit 0
   else
@@ -303,5 +319,5 @@ if [ -n "$ETAG" ]; then
   fi
 else
   # Return Etag/S3 MD5 Sum
-  $ECHO_BIN "${s3sum}-${n}${filename_in_output}"
+  $ECHO_BIN "${s3sum}${n}${filename_in_output}"
 fi
